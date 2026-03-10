@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "apis": [
+    {
+      "identifier": "halaxy",
+      "source": "@halaxy/v1.0#m0mkr8imf1ulmah",
+      "integrity": "sha512-oKir/mPSIgDYyflzIrpgPDrGfPVAnVQrxZKOV8AE9uJYsc7oHZ/sFD/08o+zq47qBPUroSguKeXWUQ1W9EBsbg==",
+      "installerVersion": "6.1.3"
+    }
+  ]
+}

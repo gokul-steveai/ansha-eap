@@ -1,0 +1,52 @@
+7lCw6u7zmY
+1kj23lk1j2
+
+curl -X POST "https://elevate.ansahealth.com.au/api/notifications"   -H "Content-Type: application/json"   -d '{
+    "title": "Update",
+    "userId": "1kj23lk1j2",
+    "message": "Notification ui fix",
+    "url": "https://elevate.ansahealth.com.au/inbox"
+  }'
+
+
+Implementing multiple halaxy account
+  - update user table. Alter patient_id to accepts multiple, because in every halaxy account uses different patient information.
+  - update userCrud to handle multiple patient id
+  - Dynamic selecting halaxy account credential on every request
+  - update all halaxy scripts, halaxyFetch accordingly to accomodate to changes.
+  - update token cache logic
+  - change how the way to create halaxy patient information
+  - - move Create the patient if not exist on the booking process instead of creating patient on load if user doesn't have patient_id (because now we use multiple account)
+  - update halaxy createPatient accordingly
+
+- update HalaxyServiceContext appointments accordingly
+- - update getUserAppointments
+- - update cancelAppointment
+- update rebookAppointment
+- loads all user appointments on all halaxy accounts
+- fix issue after booking
+
+  todos
+- add location to appointment card to know appointment location at glance
+
+
+
+feb 2, 2026
+
+### booking
+- added collarts location
+
+## todos
+- [x] Add location filter per company
+
+
+ALTER TABLE companies
+ADD COLUMN locations TEXT[] DEFAULT '{}';
+
+-- Set existing rows to the default empty array
+UPDATE companies
+SET locations = '{}' 
+WHERE locations IS NULL;
+
+-- Then create the index
+CREATE INDEX idx_companies ON companies USING GIN (locations);
