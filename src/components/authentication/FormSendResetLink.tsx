@@ -26,14 +26,14 @@ export function FormSendResetLink({
         if (!useremail) return;
 
         try {
-            const { success: userFound, data } = await getUserByEmail(useremail);
+            const response = await getUserByEmail(useremail);
 
-            if (!userFound || !data) {
+            if (!response.success || !response.data) {
                 setError("Email not found");
                 return;
             }
 
-            const resPasswordResetToken = await createPasswordResetToken(data.id);
+            const resPasswordResetToken = await createPasswordResetToken(response.data.id);
 
             if (!resPasswordResetToken.success || !resPasswordResetToken.data) {
                 setError("Something went wrong");

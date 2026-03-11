@@ -3,7 +3,7 @@ import { ERROR_CODES, ErrorCode } from "./errorCodes";
 /**
  * Standard API response wrapper with better error handling
  */
-export type ApiResponse<T = any> = 
+export type ApiResponse<T = unknown> = 
   | SuccessResponse<T>
   | ErrorResponse;
 
@@ -19,7 +19,7 @@ export type ErrorResponse = {
   success: false;
   message: string;
   code: ErrorCode;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   timestamp: string;
 };
 
@@ -42,7 +42,7 @@ export const createSuccessResponse = <T>(
 export const createErrorResponse = (
   message: string,
   code: ErrorCode = ERROR_CODES.INTERNAL_ERROR,
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 ): ErrorResponse => ({
   success: false,
   message,

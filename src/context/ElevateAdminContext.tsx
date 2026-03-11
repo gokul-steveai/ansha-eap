@@ -29,8 +29,8 @@ useEffect(() => {
     setIsFetching(true)
     try {
       const [usersRes, companiesRes] = await Promise.all([getUsers(), getCompanies()])
-      const usersData = usersRes.data ?? []
-      const companiesData = companiesRes.data ?? []
+      const usersData = usersRes.success ?  usersRes.data ?? [] : []
+      const companiesData = companiesRes.success ? companiesRes.data ?? [] : []
 
       setUsers(usersData)
 

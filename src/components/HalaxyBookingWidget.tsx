@@ -98,7 +98,7 @@ export default function HalaxyBookingWidget({ practitioner_role }: HalaxyBooking
 
                 if (patientId) {
                     myPatientId = patientId
-                    const { data } = await updateUser(currentUser.id, {
+                    const response = await updateUser(currentUser.id, {
                         patient_id: [
                             {
                                 account_id: halaxyAccountId || defaultAccountId,
@@ -106,8 +106,8 @@ export default function HalaxyBookingWidget({ practitioner_role }: HalaxyBooking
                             }
                         ]
                     });
-                    if (data) {
-                        setCurrentUser(data);
+                    if (response.success && response.data) {
+                        setCurrentUser(response.data);
                     }
                 }
             } catch (err) {

@@ -31,22 +31,24 @@ export function FormResetPassword({ isAdmin, email, token, className, ...props }
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [{ data: user }, { data: passwordResetToken }] = await Promise.all([
+                const [userResponse, passwordResetTokenResponse] = await Promise.all([
                     getUserByEmail(email),
                     getPasswordResetToken(token),
                 ]);
 
                 // Now you have both user and token data
-                if(!user){
+                if(!userResponse.success || !userResponse.data){
                     setIsvalid("invalid")
                     return
                 }
 
                  if(!isAdmin) {
-                    if (!passwordResetToken || !user) {
+                    if (!passwordResetTokenResponse.success || !passwordResetTokenResponse.data) {
                         setIsvalid("invalid")
                         return
                     }
+
+                    const passwordResetToken = passwordResetTokenResponse.data;
 
                     if (passwordResetToken.used || new Date(passwordResetToken.expires_at) < new Date()) {
                         setIsvalid('expired')
