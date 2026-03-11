@@ -1,13 +1,16 @@
 "use server";
 import pool from "@/lib/db";
-import { DailyActivity, DailyCheckIn } from "@/types";
+import { ApiResponse, createErrorResponse, createSuccessResponse, DailyActivity, DailyCheckIn, ErrorResponse } from "@/types";
 import { nanoid } from "nanoid";
 import { Company } from "./crudCompanies";
 import bcrypt from "bcrypt";
+import { ERROR_CODES } from "@/types/errorCodes";
+
 export type PatientIdObj = {
   account_id: string;
   patient_id: string;
 };
+
 export type User = {
   id: string;
   patient_id: PatientIdObj[];
@@ -30,16 +33,7 @@ export type DashboardUser = {
   daily_check_ins: DailyCheckIn[];
 };
 
-type Result<T> = {
-  success: boolean;
-  message: string;
-  data?: T;
-};
-
-
-// serverActions/crudUsers.ts
-
-export async function getUserDashboardData(userId: string): Promise<Result<DashboardUser>> {
+export async function getUserDashboardData(userId: string): Promise<ApiResponse<DashboardUser> | ErrorResponse> {
   try {
     const result = await pool.query(
       `
@@ -61,7 +55,9 @@ export async function getUserDashboardData(userId: string): Promise<Result<Dashb
       [userId]
     );
 
-    if (!result.rows[0]) return { success: false, message: `User: ${userId} not found` };
+    if (!result.rows[0]) {
+      return createErrorResponse(`User: ${userId} not found`, ERROR_CODES.NOT_FOUND);
+    }
 
     const row = result.rows[0];
 
@@ -86,18 +82,18 @@ export async function getUserDashboardData(userId: string): Promise<Result<Dashb
       daily_check_ins: row.daily_check_ins || [],
     };
 
-    return { success: true, message: "Dashboard data fetched successfully", data: dashboardData };
+    return createSuccessResponse(dashboardData, "Dashboard data fetched successfully");
   } catch (error: unknown) {
     let message = "An unknown error occurred";
     if (error instanceof Error) message = error.message;
-    return { success: false, message };
+    return createErrorResponse(message, ERROR_CODES.DASHBOARD_DATA_FETCH_ERROR);
   }
 }
 
 // CREATE
 export async function createUser(
   data: Omit<User, "id" | "patient_id" | "created_at" | "updated_at" | "roles" | "profile_img">
-): Promise<Result<User>> {
+): Promise<ApiResponse<User> | ErrorResponse> {
   try {
     const id = nanoid(10);
 
@@ -139,20 +135,16 @@ export async function createUser(
 
     user.roles = rolesRes.rows.map((r) => r.name);
 
-    return {
-      success: true,
-      message: "User created successfully",
-      data: user,
-    };
+    return createSuccessResponse(user, "User created successfully");
   } catch (error: unknown) {
     let message = "An unknown error occurred";
     if (error instanceof Error) message = error.message;
-    return { success: false, message };
+    return createErrorResponse(message, ERROR_CODES.USER_CREATION_FAILED);
   }
 }
 
 // READ ALL
-export async function getUsers(): Promise<Result<User[]>> {
+export async function getUsers(): Promise<ApiResponse<User[]> | ErrorResponse> {
   try {
     const result = await pool.query(`
       SELECT u.*, COALESCE(json_agg(r.name) FILTER (WHERE r.name IS NOT NULL), '[]') AS roles
@@ -163,20 +155,16 @@ export async function getUsers(): Promise<Result<User[]>> {
       ORDER BY u.created_at DESC;
     `);
 
-    return {
-      success: true,
-      message: "Users fetched successfully",
-      data: result.rows as User[],
-    };
+    return createSuccessResponse(result.rows as User[], "Users fetched successfully");
   } catch (error: unknown) {
     let message = "An unknown error occurred";
     if (error instanceof Error) message = error.message;
-    return { success: false, message };
+    return createErrorResponse(message, ERROR_CODES.USER_FETCH_FAILED);
   }
 }
 
 // READ ONE (by ID)
-export async function getUserById(id: string): Promise<Result<User>> {
+export async function getUserById(id: string): Promise<ApiResponse<User> | ErrorResponse> {
   try {
     const result = await pool.query(`
       SELECT u.*, COALESCE(json_agg(r.name) FILTER (WHERE r.name IS NOT NULL), '[]') AS roles
@@ -187,22 +175,20 @@ export async function getUserById(id: string): Promise<Result<User>> {
       GROUP BY u.id;
     `, [id]);
 
-    if (!result.rows[0]) return { success: false, message: `User: ${id} not found` };
+    if (!result.rows[0]) {
+      return createErrorResponse(`User: ${id} not found`, ERROR_CODES.USER_NOT_FOUND);
+    }
 
-    return {
-      success: true,
-      message: "User fetched successfully",
-      data: result.rows[0] as User,
-    };
+    return createSuccessResponse(result.rows[0] as User, "User fetched successfully");
   } catch (error: unknown) {
     let message = "An unknown error occurred";
     if (error instanceof Error) message = error.message;
-    return { success: false, message };
+    return createErrorResponse(message, ERROR_CODES.USER_FETCH_FAILED);
   }
 }
 
 // READ ALL USERS BY COMPANY
-export async function getUsersByCompany(companyId: string): Promise<Result<User[]>> {
+export async function getUsersByCompany(companyId: string): Promise<ApiResponse<User[]> | ErrorResponse> {
   try {
     const result = await pool.query(
       `
@@ -217,21 +203,17 @@ export async function getUsersByCompany(companyId: string): Promise<Result<User[
       [companyId]
     );
 
-    return {
-      success: true,
-      message: "Users fetched successfully for company",
-      data: result.rows as User[],
-    };
+    return createSuccessResponse(result.rows as User[], "Users fetched successfully for company");
   } catch (error: unknown) {
     let message = "An unknown error occurred";
     if (error instanceof Error) message = error.message;
-    return { success: false, message };
+    return createErrorResponse(message, ERROR_CODES.USER_FETCH_FAILED);
   }
 }
 
 
 // READ ONE (by Email)
-export async function getUserByEmail(email: string): Promise<Result<User>> {
+export async function getUserByEmail(email: string): Promise<ApiResponse<User> | ErrorResponse> {
   try {
     const result = await pool.query(`
       SELECT u.*, COALESCE(json_agg(r.name) FILTER (WHERE r.name IS NOT NULL), '[]') AS roles
@@ -242,17 +224,13 @@ export async function getUserByEmail(email: string): Promise<Result<User>> {
       GROUP BY u.id;
     `, [email]);
 
-    if (!result.rows[0]) return { success: false, message: `User: ${email} not found` };
+    if (!result.rows[0]) return createErrorResponse(`User: ${email} not found`, ERROR_CODES.USER_NOT_FOUND);
 
-    return {
-      success: true,
-      message: "User fetched successfully",
-      data: result.rows[0] as User,
-    };
+    return createSuccessResponse(result.rows[0] as User, "User fetched successfully");
   } catch (error: unknown) {
     let message = "An unknown error occurred";
     if (error instanceof Error) message = error.message;
-    return { success: false, message };
+    return createErrorResponse(message, ERROR_CODES.USER_FETCH_FAILED);
   }
 }
 
@@ -326,7 +304,7 @@ export async function getUserByEmail(email: string): Promise<Result<User>> {
 export async function updateUser(
   id: string,
   data: Partial<Omit<User, "id" | "created_at">>
-): Promise<Result<User>> {
+): Promise<ApiResponse<User> | ErrorResponse> {
   try {
     const fields: string[] = [];
     const values: (string | number | boolean | null)[] = [];
@@ -375,7 +353,7 @@ export async function updateUser(
     const result = await pool.query(query, values);
 
     if (!result.rows[0]) {
-      return { success: false, message: `User: ${id} not found` };
+      return createErrorResponse(`User: ${id} not found`, ERROR_CODES.USER_NOT_FOUND);
     }
 
     const user = result.rows[0] as User;
@@ -402,32 +380,23 @@ export async function updateUser(
       user.roles = rolesRes.rows.map((r) => r.name);
     }
 
-    return {
-      success: true,
-      message: `User: ${id} updated successfully`,
-      data: user,
-    };
+    return createSuccessResponse(user, `User: ${id} updated successfully`);
   } catch (error: unknown) {
     let message = "An unknown error occurred";
     if (error instanceof Error) message = error.message;
-    return { success: false, message };
+    return createErrorResponse(message, ERROR_CODES.USER_UPDATE_FAILED);
   }
 }
 
-// DELETE
-export async function deleteUser(id: string): Promise<Result<User>> {
+export async function deleteUser(id: string): Promise<ApiResponse<User> | ErrorResponse> {
   try {
     const result = await pool.query(`DELETE FROM users WHERE id = $1 RETURNING *`, [id]);
-    if (!result.rows[0]) return { success: false, message: `User: ${id} not found` };
+    if (!result.rows[0]) return createErrorResponse(`User: ${id} not found`, ERROR_CODES.USER_NOT_FOUND);
 
-    return {
-      success: true,
-      message: `User: ${id} deleted successfully`,
-      data: result.rows[0] as User,
-    };
+    return createSuccessResponse(result.rows[0] as User, `User: ${id} deleted successfully`);
   } catch (error: unknown) {
     let message = "An unknown error occurred";
     if (error instanceof Error) message = error.message;
-    return { success: false, message };
+    return createErrorResponse(message, ERROR_CODES.USER_DELETE_FAILED);
   }
 }

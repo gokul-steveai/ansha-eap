@@ -7,8 +7,13 @@ import { getUserByEmail, User } from "../crudUsers";
 
 export const AuthenticateUser = async (credentials: { useremail: string; userpass: string; viaadmin?: boolean }): Promise<User & {who5Completed: boolean} | null> => {
   try {
-    const { data: user } = await getUserByEmail(credentials?.useremail);
-    if (!user) return null;
+    const response = await getUserByEmail(credentials?.useremail);
+    
+    if (!response.success || !response.data) {
+      return null;
+    }
+    
+    const user = response.data;
 
     const viaAdmin = credentials?.viaadmin || false;
     if (!viaAdmin) {
